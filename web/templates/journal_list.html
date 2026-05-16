@@ -1,0 +1,136 @@
+{{define "content"}}
+<div class="lg-page-head">
+  <div class="lg-page-head__title-block">
+    <span class="lg-page-eyebrow">LEDGER</span>
+    <h1 class="lg-page-title">
+      日記帳<span class="lg-page-title__suffix">Journal</span>
+    </h1>
+    <p style="margin:0; font-family:var(--font-body-cn); color:var(--text-muted); font-size:14px;">
+      共 <strong style="color:var(--text-strong); font-family:var(--font-mono);">{{.Total}}</strong> 筆交易
+    </p>
+  </div>
+  <div class="lg-page-actions">
+    <a href="/import" class="lg-btn-ghost">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V7M6 13l6-6 6 6M5 3h14"/></svg>
+      匯入
+    </a>
+    <a href="/journal/new" class="lg-btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      新增交易
+    </a>
+  </div>
+</div>
+
+<form method="get" class="lg-filter-bar">
+  <input type="text" name="q" value="{{.Filter.SearchText}}" placeholder="搜尋敘述、備註、編號…" class="lg-filter-input">
+  <select name="month" class="lg-filter-select" onchange="this.form.submit()">
+    <option value="">全部月份</option>
+    {{$cm := .Filter.YearMonth}}
+    {{range .MonthOptions}}<option value="{{.}}" {{if eq . $cm}}selected{{end}}>{{.}}</option>{{end}}
+  </select>
+  <select name="category_id" class="lg-filter-select" onchange="this.form.submit()">
+    <option value="">全部分類</option>
+    {{$cid := .Filter.CategoryID}}
+    {{range .Categories}}<option value="{{.ID}}" {{if eq .ID $cid}}selected{{end}}>{{.Name}}</option>{{end}}
+  </select>
+  <select name="account_id" class="lg-filter-select" onchange="this.form.submit()">
+    <option value="">全部帳戶</option>
+    {{$aid := .Filter.AccountID}}
+    {{range .Accounts}}<option value="{{.ID}}" {{if eq .ID $aid}}selected{{end}}>{{.Name}}</option>{{end}}
+  </select>
+  <select name="project_id" class="lg-filter-select" onchange="this.form.submit()">
+    <option value="">全部專案</option>
+    {{$pid := .Filter.ProjectID}}
+    {{range .Projects}}<option value="{{.ID}}" {{if eq .ID $pid}}selected{{end}}>{{.Name}}</option>{{end}}
+  </select>
+  <div class="lg-filter-actions">
+    <a href="/journal" class="lg-btn-link">清除</a>
+    <button class="lg-btn-primary" type="submit">查詢</button>
+  </div>
+</form>
+
+<section class="lg-panel lg-panel--flush" style="overflow: hidden;">
+  <table class="lg-table">
+    <thead>
+      <tr>
+        <th>編號</th>
+        <th>日期</th>
+        <th>敘述</th>
+        <th>分類</th>
+        <th class="right">金額</th>
+        <th>轉出</th>
+        <th>轉入</th>
+        <th>專案</th>
+        <th class="right">　</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Transactions}}
+      <tr>
+        <td><span class="lg-tx-code">{{.Code}}</span></td>
+        <td><span class="lg-tx-date">{{.Date}}</span></td>
+        <td>
+          <div class="lg-tx-desc">{{.Description}}</div>
+          {{if .Note}}<div class="lg-tx-note">{{.Note}}</div>{{end}}
+        </td>
+        <td>
+          {{$type := .Type}}
+          <span class="lg-cat{{if eq $type "income"}} lg-cat--income{{else if eq $type "expense"}} lg-cat--expense{{else if eq $type "transfer"}} lg-cat--transfer{{end}}">{{.CategoryName}}</span>
+        </td>
+        <td class="right">
+          {{if eq .Type "transfer"}}
+            <span style="display:inline-flex; align-items:center; gap:6px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--info-500)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 4l4 4-4 4M3 8h18M7 20l-4-4 4-4M21 16H3"/></svg>
+              <span class="lg-num lg-num--transfer">{{money .AmountCents}}</span>
+            </span>
+          {{else if eq .Type "income"}}
+            <span class="lg-num lg-num--income">{{money .AmountCents}}</span>
+          {{else}}
+            <span class="lg-num lg-num--expense">{{money .AmountCents}}</span>
+          {{end}}
+        </td>
+        <td>{{if .FromAccountName}}<span style="font-family:var(--font-body-cn); font-size:13px;">{{.FromAccountName}}</span>{{end}}</td>
+        <td>{{if .ToAccountName}}<span style="font-family:var(--font-body-cn); font-size:13px;">{{.ToAccountName}}</span>{{end}}</td>
+        <td>
+          {{if .ProjectName}}
+            <span class="lg-cat" style="background:var(--accent-soft); color:var(--text-brand);">{{.ProjectName}}</span>
+          {{else}}
+            <span style="color:var(--text-faint); font-size:12px;">—</span>
+          {{end}}
+        </td>
+        <td class="right">
+          <span class="lg-row-actions">
+            <a href="/journal/{{.ID}}/edit" class="lg-row-action" title="編輯">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6"/><path d="m18 2 4 4-10 10H8v-4Z"/></svg>
+            </a>
+            <form method="post" action="/journal/{{.ID}}/delete" style="display:inline;" onsubmit="return confirm('確定刪除？')">
+              <button class="lg-row-action is-danger" title="刪除">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+            </form>
+          </span>
+        </td>
+      </tr>
+      {{else}}
+      <tr><td colspan="9">
+        <div class="lg-empty">
+          <p class="lg-empty__title">尚無交易</p>
+          <p class="lg-empty__sub"><a href="/journal/new" style="color:var(--text-brand);">新增第一筆 →</a></p>
+        </div>
+      </td></tr>
+      {{end}}
+    </tbody>
+  </table>
+</section>
+
+{{if gt .Total 50}}
+<div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 4px; font-family:var(--font-sans); font-size:13px; color:var(--text-muted);">
+  <a href="?offset={{.PrevOffset}}{{if .Filter.SearchText}}&q={{.Filter.SearchText}}{{end}}{{if .Filter.YearMonth}}&month={{.Filter.YearMonth}}{{end}}"
+     class="lg-btn-ghost" style="{{if eq .Filter.Offset 0}}opacity:0.4; pointer-events:none;{{end}}">← 上一頁</a>
+  <span>第 {{add .Filter.Offset 1}}–{{add .Filter.Offset 50}} 筆</span>
+  <a href="?offset={{.NextOffset}}{{if .Filter.SearchText}}&q={{.Filter.SearchText}}{{end}}{{if .Filter.YearMonth}}&month={{.Filter.YearMonth}}{{end}}"
+     class="lg-btn-ghost" style="{{if ge .NextOffset .Total}}opacity:0.4; pointer-events:none;{{end}}">下一頁 →</a>
+</div>
+{{end}}
+{{end}}
+{{template "base" .}}

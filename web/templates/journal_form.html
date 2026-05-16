@@ -1,0 +1,131 @@
+{{define "content"}}
+{{$mode := .Mode}}
+{{$tx := .Tx}}
+<div class="lg-page-head">
+  <div class="lg-page-head__title-block">
+    <span class="lg-page-eyebrow">LEDGER · {{if eq $mode "edit"}}EDIT{{else}}NEW{{end}}</span>
+    <h1 class="lg-page-title">
+      {{if eq $mode "edit"}}編輯交易{{else}}新增交易{{end}}
+      <span class="lg-page-title__suffix">{{if eq $mode "edit"}}{{$tx.Code}}{{else}}Transaction{{end}}</span>
+    </h1>
+    <p style="margin:0; font-family:var(--font-body-cn); color:var(--text-muted); font-size:14px;">
+      支出 = 只填「轉出帳戶」 · 收入 = 只填「轉入帳戶」 · 轉帳 = 兩個都填
+    </p>
+  </div>
+  <div class="lg-page-actions">
+    <a href="/journal" class="lg-btn-ghost">← 取消</a>
+  </div>
+</div>
+
+<form method="post" action="{{if eq $mode "edit"}}/journal/{{$tx.ID}}{{else}}/journal{{end}}"
+      style="display:grid; grid-template-columns: 1fr 320px; gap: 24px; align-items:start;">
+
+  <section class="lg-panel" style="display:flex; flex-direction:column; gap:16px;">
+    <!-- amount + date row -->
+    <div class="lg-field">
+      <label class="lg-field__label">金額 <span class="req">*</span></label>
+      <input class="lg-input lg-input--money" name="amount" inputmode="decimal"
+             value="{{if eq $mode "edit"}}{{.AmountText}}{{end}}" placeholder="0.00" required>
+    </div>
+
+    <div class="lg-2grid">
+      <div class="lg-field">
+        <label class="lg-field__label">日期 <span class="req">*</span></label>
+        <input class="lg-input" type="date" name="tx_date" value="{{$tx.Date}}" required>
+      </div>
+      <div class="lg-field">
+        <label class="lg-field__label">專案</label>
+        <select class="lg-select" name="project_id">
+          <option value="">— 無 —</option>
+          {{$pid := $tx.ProjectID.Int64}}
+          {{range .Projects}}<option value="{{.ID}}" {{if eq .ID $pid}}selected{{end}}>{{.Name}}</option>{{end}}
+        </select>
+      </div>
+    </div>
+
+    <div class="lg-field">
+      <label class="lg-field__label">分類 <span class="req">*</span></label>
+      <select class="lg-select" name="category_id">
+        <option value="">— 選擇 —</option>
+        {{$cid := $tx.CategoryID.Int64}}
+        {{range .Categories}}
+          <option value="{{.ID}}" {{if eq .ID $cid}}selected{{end}}>{{groupLabel .Group}} · {{.Name}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <div class="lg-2grid">
+      <div class="lg-field">
+        <label class="lg-field__label">
+          轉出帳戶
+          <span class="lg-field__hint" style="margin-left:auto;">支出 / 轉帳</span>
+        </label>
+        <select class="lg-select" name="from_account_id">
+          <option value="">— 無 —</option>
+          {{$fid := $tx.FromAccountID.Int64}}
+          {{range .Accounts}}<option value="{{.ID}}" {{if eq .ID $fid}}selected{{end}}>{{kindLabel .Kind}} · {{.Name}}</option>{{end}}
+        </select>
+      </div>
+      <div class="lg-field">
+        <label class="lg-field__label">
+          轉入帳戶
+          <span class="lg-field__hint" style="margin-left:auto;">收入 / 轉帳</span>
+        </label>
+        <select class="lg-select" name="to_account_id">
+          <option value="">— 無 —</option>
+          {{$tid := $tx.ToAccountID.Int64}}
+          {{range .Accounts}}<option value="{{.ID}}" {{if eq .ID $tid}}selected{{end}}>{{kindLabel .Kind}} · {{.Name}}</option>{{end}}
+        </select>
+      </div>
+    </div>
+
+    <div class="lg-field">
+      <label class="lg-field__label">敘述 <span class="req">*</span></label>
+      <input class="lg-input" type="text" name="description" value="{{$tx.Description}}" required>
+    </div>
+
+    <div class="lg-field">
+      <label class="lg-field__label">備註</label>
+      <textarea class="lg-textarea" name="note">{{$tx.Note}}</textarea>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:8px; padding-top:8px;">
+      <a href="/journal" class="lg-btn-ghost">取消</a>
+      <button type="submit" class="lg-btn-primary">
+        {{if eq $mode "edit"}}儲存變更{{else}}儲存交易{{end}}
+      </button>
+    </div>
+  </section>
+
+  <aside style="display:flex; flex-direction:column; gap:16px; position:sticky; top:80px;">
+    <details class="lg-tip" open>
+      <summary>怎麼填這張表</summary>
+      <ul>
+        <li>依交易發生的「日期」、「敘述」、「分類」輸入</li>
+        <li>支出 → 在「轉出帳戶」選擇付錢的帳戶</li>
+        <li>收入 → 在「轉入帳戶」選擇收到錢的帳戶</li>
+        <li>從 A 帳戶轉到 B 帳戶 → 同時設定「轉出」與「轉入」</li>
+        <li>同事代墊的支出，轉出帳戶選該同事的「代墊」負債帳戶</li>
+      </ul>
+    </details>
+
+    {{if eq $mode "edit"}}
+    <section class="lg-panel" style="padding:18px 20px;">
+      <div class="lg-panel__head">
+        <div>
+          <h3 class="lg-panel__title" style="font-size:14px;">編號</h3>
+          <p class="lg-panel__sub" style="font-family:var(--font-mono);">{{$tx.Code}}</p>
+        </div>
+      </div>
+      <form method="post" action="/journal/{{$tx.ID}}/delete" onsubmit="return confirm('確定刪除此交易？')">
+        <button class="lg-btn-ghost" style="border-color: var(--danger-100); color: var(--danger-700); width: 100%;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          刪除此交易
+        </button>
+      </form>
+    </section>
+    {{end}}
+  </aside>
+</form>
+{{end}}
+{{template "base" .}}

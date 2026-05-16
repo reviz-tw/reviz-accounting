@@ -1,0 +1,190 @@
+{{define "base"}}<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · {{.CompanyName}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Source+Serif+4:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+TC:wght@300;400;500;600;700;900&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/components.css">
+<link rel="stylesheet" href="/static/css/ledger.css">
+<style>
+  html, body { width: 100%; height: 100%; margin: 0; }
+  body { font-family: var(--font-body-en), var(--font-body-cn); background: var(--bg-canvas); color: var(--text-base); }
+  .lg-app { min-height: 100vh; }
+  .lg-main { min-height: 100vh; }
+  /* Tiny utilities */
+  .u-right  { text-align: right; }
+  .u-mt-0   { margin-top: 0; }
+  .u-flex   { display: inline-flex; align-items: center; gap: 6px; }
+  .u-link   { color: var(--text-brand); cursor: pointer; text-decoration: none; }
+  .u-link:hover { color: var(--accent-hover); }
+  .u-mute   { color: var(--text-faint); }
+  .u-grow   { flex: 1; }
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  .lg-tip {
+    background: var(--surface-tint);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md);
+    padding: 14px 18px;
+    font-family: var(--font-body-cn);
+    font-size: 13px;
+    color: var(--text-base);
+    line-height: 1.7;
+  }
+  .lg-tip > summary {
+    cursor: pointer;
+    font-family: var(--font-serif-cn);
+    font-weight: 500;
+    color: var(--text-strong);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .lg-tip > summary::before {
+    content: "";
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .lg-tip ul, .lg-tip ol { margin: 12px 0 0; padding-left: 22px; color: var(--text-muted); }
+  .lg-tip li { margin-bottom: 4px; }
+  .lg-tip a { color: var(--text-brand); border-bottom: 1px solid color-mix(in oklch, var(--text-brand) 30%, transparent); }
+</style>
+</head>
+<body>
+{{if .ShowChrome}}
+<div class="lg-app">
+  {{template "sidebar" .}}
+  <main class="lg-main">
+    {{template "topbar" .}}
+    <div class="lg-body">{{template "content" .}}</div>
+  </main>
+</div>
+{{else}}
+{{template "content" .}}
+{{end}}
+</body>
+</html>{{end}}
+
+{{define "sidebar"}}
+{{$active := .Active}}
+{{$user := .CurrentUser}}
+<aside class="lg-side">
+  <div class="lg-side__brand">
+    <span class="lg-side__brand-mark">ReV<span class="lg-dot"></span>z</span>
+    <span class="lg-side__brand-cn">帳簿</span>
+  </div>
+
+  <div class="lg-side__ws">
+    <div class="lg-side__ws-mark">公</div>
+    <div class="lg-side__ws-meta">
+      <p class="lg-side__ws-name">{{.CompanyName}}</p>
+      <p class="lg-side__ws-sub">會計年度 {{.FiscalYear}}</p>
+    </div>
+  </div>
+
+  <nav class="lg-side__nav">
+    <div class="lg-side__group">
+      <p class="lg-side__section">OVERVIEW</p>
+      <a href="/dashboard" class="lg-side__item{{if eq $active "dashboard"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        </span>
+        儀表板
+      </a>
+      <a href="/journal" class="lg-side__item{{if eq $active "journal"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        </span>
+        日記帳
+      </a>
+    </div>
+
+    <div class="lg-side__group">
+      <p class="lg-side__section">STATEMENTS</p>
+      <a href="/pnl" class="lg-side__item{{if eq $active "pnl"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 7-9"/><path d="M14 7h6v6"/></svg>
+        </span>
+        損益表
+      </a>
+    </div>
+
+    <div class="lg-side__group">
+      <p class="lg-side__section">STRUCTURE</p>
+      <a href="/accounts" class="lg-side__item{{if eq $active "accounts"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>
+        </span>
+        帳戶
+      </a>
+      <a href="/categories" class="lg-side__item{{if eq $active "categories"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 13h6v6H4zM14 13h6v6h-6z"/></svg>
+        </span>
+        分類
+      </a>
+      <a href="/projects" class="lg-side__item{{if eq $active "projects"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7l2 2h9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+        </span>
+        專案
+      </a>
+    </div>
+
+    <div class="lg-side__group">
+      <p class="lg-side__section">SYSTEM</p>
+      {{if and $user (eq $user.Role "owner")}}
+      <a href="/users" class="lg-side__item{{if eq $active "users"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 21v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1"/><circle cx="17" cy="9" r="2.5"/><path d="M21 21v-1a3.5 3.5 0 0 0-3.5-3.5H17"/></svg>
+        </span>
+        使用者
+      </a>
+      {{end}}
+      <a href="/settings" class="lg-side__item{{if eq $active "settings"}} is-active{{end}}">
+        <span class="lg-side__item-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+        </span>
+        設定
+      </a>
+    </div>
+  </nav>
+
+  {{if $user}}
+  <div class="lg-side__footer">
+    <form method="post" action="/logout" style="display:flex; align-items:center; gap:10px; padding:6px; width:100%; background:none; border:none; cursor:pointer;">
+      <div class="lg-side__user" style="flex:1; padding:0;">
+        <div class="lg-side__avatar">{{slice $user.Username 0 1}}</div>
+        <div class="lg-side__user-meta">
+          <p class="lg-side__user-name">{{$user.Username}}</p>
+          <p class="lg-side__user-email">{{$user.Role}}</p>
+        </div>
+      </div>
+      <button class="lg-row-action" title="登出" style="color: var(--text-faint);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </form>
+  </div>
+  {{end}}
+</aside>
+{{end}}
+
+{{define "topbar"}}
+<header class="lg-top">
+  <div class="lg-crumbs">
+    {{$last := sub (len .Crumbs) 1}}
+    {{range $i, $c := .Crumbs}}
+      {{if gt $i 0}}<span class="lg-crumbs__sep">›</span>{{end}}
+      <span{{if eq $i $last}} class="lg-crumbs__cur"{{end}}>{{$c}}</span>
+    {{end}}
+  </div>
+  <div class="lg-top__right">
+    <a href="/journal/new" class="lg-quick-add">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      新增交易
+    </a>
+  </div>
+</header>
+{{end}}

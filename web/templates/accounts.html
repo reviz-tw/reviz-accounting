@@ -1,0 +1,132 @@
+{{define "content"}}
+<div class="lg-page-head">
+  <div class="lg-page-head__title-block">
+    <span class="lg-page-eyebrow">STRUCTURE</span>
+    <h1 class="lg-page-title">
+      帳戶總覽<span class="lg-page-title__suffix">Accounts</span>
+    </h1>
+    <p style="margin:0; font-family:var(--font-body-cn); color:var(--text-muted); font-size:14px;">
+      資產 {{len .Assets}} · 負債 {{len .Liabilities}} · 淨值 <strong style="font-family:var(--font-mono); color:var(--text-strong);">{{money .NetWorth}}</strong>
+    </p>
+  </div>
+</div>
+
+<div class="lg-2col-eq">
+  <section class="lg-acc-card">
+    <div class="lg-acc-card__head">
+      <div>
+        <h4 class="lg-acc-card__label">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--info-500); margin-right:6px;"></span>
+          資產
+        </h4>
+        <p style="font-family:var(--font-sans); font-size:11px; color:var(--text-faint); margin:4px 0 0; letter-spacing:0.04em;">
+          {{len .Assets}} 個帳戶
+        </p>
+      </div>
+      <p class="lg-acc-card__total {{if lt .AssetTotal 0}}is-neg{{end}}">{{money .AssetTotal}}</p>
+    </div>
+    <div>
+      {{range .Assets}}
+      <div style="display:grid; grid-template-columns: auto 1fr auto auto; gap:14px; align-items:center; padding:12px 4px; border-top:1px solid var(--border-subtle);">
+        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-faint);">{{printf "%04d" .ID}}</span>
+        <div>
+          <div style="font-family:var(--font-serif-cn); font-size:14px; font-weight:500; color:var(--text-strong);">
+            {{.Name}}
+            {{if not .Active}}<span style="color:var(--text-faint); font-size:11px; margin-left:6px;">已停用</span>{{end}}
+          </div>
+        </div>
+        {{if lt .Balance 0}}<span class="lg-num lg-num--expense">{{money .Balance}}</span>
+        {{else if eq .Balance 0}}<span class="lg-num lg-num--zero">{{money .Balance}}</span>
+        {{else}}<span class="lg-num lg-num--income">{{money .Balance}}</span>{{end}}
+        <span class="lg-row-actions" style="opacity:0.5;">
+          <form method="post" action="/accounts/{{.ID}}/delete" style="display:inline;" onsubmit="return confirm('刪除「{{.Name}}」？若仍有交易引用會失敗')">
+            <button class="lg-row-action is-danger" title="刪除">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </form>
+        </span>
+      </div>
+      {{else}}
+      <div class="lg-empty"><p class="lg-empty__sub">尚無資產帳戶</p></div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="lg-acc-card">
+    <div class="lg-acc-card__head">
+      <div>
+        <h4 class="lg-acc-card__label">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--danger-500); margin-right:6px;"></span>
+          負債
+        </h4>
+        <p style="font-family:var(--font-sans); font-size:11px; color:var(--text-faint); margin:4px 0 0; letter-spacing:0.04em;">
+          {{len .Liabilities}} 個帳戶
+        </p>
+      </div>
+      <p class="lg-acc-card__total" style="{{if eq .LiabilityTotal 0}}color:var(--text-faint);{{end}}">{{money .LiabilityTotal}}</p>
+    </div>
+    <div>
+      {{range .Liabilities}}
+      <div style="display:grid; grid-template-columns: auto 1fr auto auto; gap:14px; align-items:center; padding:12px 4px; border-top:1px solid var(--border-subtle);">
+        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-faint);">{{printf "%04d" .ID}}</span>
+        <div>
+          <div style="font-family:var(--font-serif-cn); font-size:14px; font-weight:500; color:var(--text-strong);">
+            {{.Name}}
+            {{if not .Active}}<span style="color:var(--text-faint); font-size:11px; margin-left:6px;">已停用</span>{{end}}
+          </div>
+        </div>
+        {{if lt .Balance 0}}<span class="lg-num lg-num--expense">{{money .Balance}}</span>
+        {{else if eq .Balance 0}}<span class="lg-num lg-num--zero">{{money .Balance}}</span>
+        {{else}}<span class="lg-num lg-num--income">{{money .Balance}}</span>{{end}}
+        <span class="lg-row-actions" style="opacity:0.5;">
+          <form method="post" action="/accounts/{{.ID}}/delete" style="display:inline;" onsubmit="return confirm('刪除「{{.Name}}」？若仍有交易引用會失敗')">
+            <button class="lg-row-action is-danger" title="刪除">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </form>
+        </span>
+      </div>
+      {{else}}
+      <div class="lg-empty"><p class="lg-empty__sub">尚無負債帳戶</p></div>
+      {{end}}
+    </div>
+  </section>
+</div>
+
+<section class="lg-panel">
+  <div class="lg-panel__head">
+    <div>
+      <h3 class="lg-panel__title">新增帳戶</h3>
+      <p class="lg-panel__sub">設定後可在新增交易時選擇此帳戶</p>
+    </div>
+  </div>
+  <form method="post" action="/accounts" style="display:grid; grid-template-columns: 1fr 180px 100px; gap:12px; align-items:end;">
+    <div class="lg-field">
+      <label class="lg-field__label">帳戶名稱</label>
+      <input class="lg-input" type="text" name="name" placeholder="例：富邦銀行 · 公司戶" required>
+    </div>
+    <div class="lg-field">
+      <label class="lg-field__label">類型</label>
+      <select class="lg-select" name="kind">
+        <option value="asset">資產</option>
+        <option value="liability">負債</option>
+      </select>
+    </div>
+    <button class="lg-btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      新增
+    </button>
+  </form>
+</section>
+
+<details class="lg-tip" open>
+  <summary>帳戶設定小提示</summary>
+  <ul>
+    <li>同一銀行有台幣與外幣，建議當作兩個不同的帳戶</li>
+    <li>想記錄同事代墊：在「負債」開該同事名字的帳戶（例：「王小明代墊」）</li>
+    <li>想記錄應收帳款：在「資產」設一個「應收帳款」帳戶</li>
+    <li><b>注意：</b>帳戶名稱一旦設定後就建議不要再改；若要改，相對應的交易得逐一更正</li>
+  </ul>
+</details>
+{{end}}
+{{template "base" .}}

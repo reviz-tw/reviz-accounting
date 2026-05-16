@@ -1,0 +1,69 @@
+{{define "content"}}
+<div class="lg-login">
+  <div class="lg-login__left">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="lg-side__brand-mark" style="font-size:22px;">ReV<span class="lg-dot"></span>z</span>
+      <span class="lg-side__brand-cn" style="font-size:14px;">帳簿</span>
+    </div>
+
+    <div style="max-width:420px;">
+      <span class="lg-page-eyebrow" style="margin-bottom:18px; display:inline-flex;">SIGN IN · 登入</span>
+      <h1 class="lg-login__title">
+        讓帳目，<br>
+        <em>說自己的話</em>。
+      </h1>
+      <p class="lg-login__sub">
+        為小型公司打造的輕量記帳系統。清楚的損益、克制的介面、有溫度的協作。
+      </p>
+      <form method="post" action="/login" autocomplete="on">
+        <input type="hidden" name="next" value="{{.Next}}">
+        {{if .Error}}
+        <div style="background: var(--danger-50); border: 1px solid var(--danger-100); color: var(--danger-700); padding: 10px 14px; border-radius: var(--r-md); font-family: var(--font-sans); font-size: 13px;">
+          {{.Error}}
+        </div>
+        {{end}}
+        <div class="lg-field">
+          <label class="lg-field__label">帳號</label>
+          <input class="lg-input" name="username" value="{{.Username}}" autofocus autocomplete="username" required>
+        </div>
+        <div class="lg-field">
+          <label class="lg-field__label">密碼</label>
+          <input class="lg-input" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="lg-btn-primary" style="height: 44px; width: 100%; justify-content: center; font-size: 14px; margin-top: 4px;">
+          登入 ReViz 帳簿
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+      </form>
+    </div>
+
+    <div class="lg-login__foot">
+      © 2026 ReViz · v 1.0
+    </div>
+  </div>
+
+  <div class="lg-login__right">
+    <div class="lg-login__canvas">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <!-- Decorative scattered dots (deterministic seeded layout) -->
+        {{range $i := seq 0 79}}
+          {{$cx := mod (mul $i 47) 100}}
+          {{$cy := mod (mul $i 31) 100}}
+          {{$r := divf (addi (mod (mul $i 73) 17) 1) 6}}
+          {{$o := divf (addi (mod (mul $i 19) 8) 1) 10}}
+          <circle cx="{{$cx}}" cy="{{$cy}}" r="{{$r}}" fill="var(--accent)" opacity="{{$o}}"/>
+        {{end}}
+        <circle cx="30" cy="40" r="3"   fill="var(--brand-500)" opacity="0.9"/>
+        <circle cx="70" cy="55" r="4"   fill="var(--brand-600)" opacity="0.85"/>
+        <circle cx="55" cy="25" r="2.5" fill="var(--brand-400)" opacity="0.9"/>
+      </svg>
+    </div>
+    <div class="lg-login__quote">
+      一個點，<em>becomes</em> 一筆帳。<br>
+      一千筆帳，看見一家公司的形狀。
+      <span class="lg-login__qsub">— 讓資料說自己的話</span>
+    </div>
+  </div>
+</div>
+{{end}}
+{{template "base" .}}

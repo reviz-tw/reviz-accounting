@@ -1,0 +1,76 @@
+{{define "content"}}
+<div class="lg-page-head">
+  <div class="lg-page-head__title-block">
+    <span class="lg-page-eyebrow">SYSTEM</span>
+    <h1 class="lg-page-title">
+      匯入 CSV<span class="lg-page-title__suffix">Import</span>
+    </h1>
+    <p style="margin:0; font-family:var(--font-body-cn); color:var(--text-muted); font-size:14px;">
+      欄位 header 需包含 <code>date, description, amount</code>
+    </p>
+  </div>
+  <div class="lg-page-actions">
+    <a href="/settings" class="lg-btn-ghost">← 返回設定</a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1.6fr 1fr; gap: 24px; align-items: start;">
+  <section class="lg-panel">
+    <div class="lg-panel__head">
+      <div>
+        <h3 class="lg-panel__title">選擇 CSV 檔案</h3>
+        <p class="lg-panel__sub">分類 / 帳戶 / 專案以名稱比對既有資料</p>
+      </div>
+    </div>
+    <form method="post" action="/import" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:14px;">
+      <div class="lg-field">
+        <label class="lg-field__label">CSV 檔案</label>
+        <input class="lg-input" type="file" name="file" accept=".csv,text/csv" required>
+      </div>
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="lg-btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V7M6 13l6-6 6 6M5 3h14"/></svg>
+          開始匯入
+        </button>
+      </div>
+    </form>
+
+    {{if .Result}}
+    <div style="padding:14px; background:var(--surface-tint); border-radius:var(--r-md); display:flex; flex-direction:column; gap:8px;">
+      <p style="font-family:var(--font-serif-cn); font-weight:500; color:var(--text-strong); margin:0;">
+        匯入結果
+      </p>
+      <p style="font-family:var(--font-body-cn); font-size:13px; color:var(--text-muted); margin:0;">
+        成功 <strong style="font-family:var(--font-mono); color:var(--success-700);">{{.Result.Imported}}</strong> 筆 · 跳過 {{.Result.Skipped}} 筆
+      </p>
+      {{if .Result.Errors}}
+      <details style="margin-top:4px;">
+        <summary style="cursor:pointer; color:var(--danger-700); font-family:var(--font-sans); font-size:13px;">
+          {{len .Result.Errors}} 個錯誤
+        </summary>
+        <ul style="margin:8px 0 0; padding-left:18px; font-family:var(--font-mono); font-size:11.5px; color:var(--danger-700); max-height:200px; overflow:auto;">
+          {{range .Result.Errors}}<li>{{.}}</li>{{end}}
+        </ul>
+      </details>
+      {{end}}
+    </div>
+    {{end}}
+  </section>
+
+  <details class="lg-tip" open>
+    <summary>CSV 格式</summary>
+    <p style="margin: 8px 0; color: var(--text-muted);">完整欄位（順序不重要，依 header 對應）：</p>
+    <code style="display: block; padding: 10px; background: var(--bg-canvas); border-radius: var(--r-sm); font-size: 11px; word-break: break-all;">
+      code, date, description, category, amount, from_account, to_account, project, note
+    </code>
+    <ul style="margin-top: 12px;">
+      <li><code>date</code> 格式 <code>YYYY-MM-DD</code></li>
+      <li><code>amount</code> 為正數；方向由 <code>from_account</code> / <code>to_account</code> 決定</li>
+      <li>找不到的 category / project 會留空</li>
+      <li>找不到的 account 該筆會被略過並列入錯誤</li>
+      <li>沒提供 <code>code</code> 時會自動產生</li>
+    </ul>
+  </details>
+</div>
+{{end}}
+{{template "base" .}}

@@ -1,0 +1,87 @@
+{{define "content"}}
+<div class="lg-page-head">
+  <div class="lg-page-head__title-block">
+    <span class="lg-page-eyebrow">STRUCTURE</span>
+    <h1 class="lg-page-title">
+      分類<span class="lg-page-title__suffix">Categories</span>
+    </h1>
+    <p style="margin:0; font-family:var(--font-body-cn); color:var(--text-muted); font-size:14px;">
+      收入 {{len (index .Grouped "income")}} · 成本 {{len (index .Grouped "cost")}} · 費用 {{len (index .Grouped "expense")}}
+    </p>
+  </div>
+</div>
+
+<section class="lg-panel">
+  <div class="lg-panel__head">
+    <div>
+      <h3 class="lg-panel__title">快速新增</h3>
+      <p class="lg-panel__sub">分類在新增交易時即時可用</p>
+    </div>
+  </div>
+  <form method="post" action="/categories" style="display:grid; grid-template-columns: 1fr 180px 100px; gap:12px; align-items:end;">
+    <div class="lg-field">
+      <label class="lg-field__label">分類名稱</label>
+      <input class="lg-input" type="text" name="name" placeholder="例：雲端訂閱" required>
+    </div>
+    <div class="lg-field">
+      <label class="lg-field__label">類別</label>
+      <select class="lg-select" name="group_name">
+        <option value="expense">費用</option>
+        <option value="income">收入</option>
+        <option value="cost">成本</option>
+        <option value="equity">股東權益</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+    <button class="lg-btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      新增
+    </button>
+  </form>
+</section>
+
+<div class="lg-3col">
+  {{$grouped := .Grouped}}
+  {{range .ColumnSpecs}}
+  <div class="lg-catcol">
+    <div class="lg-catcol__head">
+      <h3>
+        <span class="lg-typedot" style="background:{{.Color}}"></span>
+        {{.Label}}
+      </h3>
+      <span class="lg-catcol__count">{{len (index $grouped .Group)}} 項</span>
+    </div>
+    <div class="lg-catlist">
+      {{$g := .Group}}
+      {{range index $grouped $g}}
+      <div class="lg-catitem">
+        <span>{{.Name}}</span>
+        <span style="display:inline-flex; gap:10px; align-items:center;">
+          <form method="post" action="/categories/{{.ID}}/delete" style="display:inline;" onsubmit="return confirm('刪除「{{.Name}}」？')">
+            <button class="lg-row-action is-danger" title="刪除" style="width:22px; height:22px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </form>
+        </span>
+      </div>
+      {{else}}
+      <div class="lg-empty"><p class="lg-empty__sub">尚無分類</p></div>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+</div>
+
+<details class="lg-tip" open>
+  <summary>分類怎麼分</summary>
+  <ul>
+    <li><b>收入</b>：產品/服務帶來的營業收入</li>
+    <li><b>成本</b>：對應收入的直接成本（COGS）；用來算毛利</li>
+    <li><b>費用</b>：營運費用，例如薪資、租金、辦公用品、廣告等</li>
+    <li><b>股東權益</b>：例如實收資本、股東增資</li>
+    <li><b>其他</b>：例如轉帳沖銷、前期結轉；不會出現在損益表</li>
+  </ul>
+  <p style="margin: 10px 0 0; color: var(--text-muted);">「收入」「成本」「費用」分類會自動進入「<a href="/pnl">損益表</a>」對應區域。</p>
+</details>
+{{end}}
+{{template "base" .}}

@@ -1,0 +1,182 @@
+{{define "content"}}
+{{$p := .PnL}}
+<div class="lg-page-head">
+  <div class="lg-page-head__title-block">
+    <span class="lg-page-eyebrow">STATEMENT</span>
+    <h1 class="lg-page-title">
+      損益表<span class="lg-page-title__suffix">Profit &amp; Loss</span>
+    </h1>
+    <p style="margin:0; font-family:var(--font-body-cn); color:var(--text-muted); font-size:14px;">
+      {{$p.Year}} 年 · 按月顯示
+    </p>
+  </div>
+  <div class="lg-page-actions">
+    <form method="get" style="display:inline-flex; gap:8px; align-items:center;">
+      <select name="project_id" class="lg-filter-select" onchange="this.form.submit()" style="background:var(--bg-base); border:1px solid var(--border-base);">
+        <option value="0">全部專案</option>
+        {{$pid := .ProjectID}}
+        {{range .Projects}}<option value="{{.ID}}" {{if eq .ID $pid}}selected{{end}}>{{.Name}}</option>{{end}}
+      </select>
+      <select name="year" class="lg-filter-select" onchange="this.form.submit()" style="background:var(--bg-base); border:1px solid var(--border-base);">
+        {{range .Years}}<option value="{{.}}" {{if eq . $p.Year}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </form>
+    <a href="/export/transactions.csv" class="lg-btn-ghost">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14M6 11l6 6 6-6M5 21h14"/></svg>
+      匯出
+    </a>
+  </div>
+</div>
+
+{{$incomeYTD := index $p.IncomeTotal 12}}
+{{$costYTD   := index $p.CostTotal   12}}
+{{$grossYTD  := index $p.GrossProfit 12}}
+{{$netYTD    := index $p.NetProfit   12}}
+{{$expYTD    := index $p.ExpenseTotal 12}}
+
+<div class="lg-kpi-grid">
+  <div class="lg-kpi">
+    <p class="lg-kpi__label"><span class="lg-kpi__label-dot lg-kpi__label-dot--income"></span>總銷貨收入</p>
+    <h2 class="lg-kpi__value"><span style="color:var(--success-700)">{{money $incomeYTD}}</span></h2>
+    <p class="lg-kpi__sub">收入分類 {{len $p.Income}} 個</p>
+  </div>
+  <div class="lg-kpi">
+    <p class="lg-kpi__label"><span class="lg-kpi__label-dot lg-kpi__label-dot--cost"></span>總銷貨成本</p>
+    {{if eq $costYTD 0}}
+    <h2 class="lg-kpi__value" style="color:var(--text-faint)">0.00</h2>
+    <p class="lg-kpi__sub">尚無記錄</p>
+    {{else}}
+    <h2 class="lg-kpi__value"><span style="color:var(--warning-700)">{{money $costYTD}}</span></h2>
+    <p class="lg-kpi__sub">成本分類 {{len $p.Cost}} 個</p>
+    {{end}}
+  </div>
+  <div class="lg-kpi">
+    <p class="lg-kpi__label"><span class="lg-kpi__label-dot lg-kpi__label-dot--net"></span>毛利</p>
+    <h2 class="lg-kpi__value {{if lt $grossYTD 0}}is-neg{{else if gt $grossYTD 0}}is-pos{{end}}">{{money $grossYTD}}</h2>
+    <p class="lg-kpi__sub">毛利率 — 依資料計算</p>
+  </div>
+  <div class="lg-kpi">
+    <p class="lg-kpi__label"><span class="lg-kpi__label-dot lg-kpi__label-dot--expense"></span>淨利 (損)</p>
+    <h2 class="lg-kpi__value {{if lt $netYTD 0}}is-neg{{else if gt $netYTD 0}}is-pos{{end}}">{{money $netYTD}}</h2>
+    <p class="lg-kpi__sub">總費用 <strong>{{money $expYTD}}</strong></p>
+  </div>
+</div>
+
+<div class="lg-stm">
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>項目</th>
+          {{range .MonthIdx}}<th>{{monthLabel .}}</th>{{end}}
+          <th style="background:var(--bg-canvas);">YTD</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- INCOME -->
+        <tr class="is-section"><td colspan="14">收入</td></tr>
+        {{range $p.Income}}
+          <tr>
+            <td>{{.CategoryName}}</td>
+            {{range $i, $v := .Monthly}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else}}<td><span class="lg-num lg-num--income">{{money $v}}</span></td>{{end}}
+            {{end}}
+            {{if eq .YTD 0}}<td><span class="zero">0.00</span></td>
+            {{else}}<td><span class="lg-num lg-num--income">{{money .YTD}}</span></td>{{end}}
+          </tr>
+        {{end}}
+        <tr class="is-total">
+          <td>總銷貨收入</td>
+          {{range $i, $v := $p.IncomeTotal}}
+            {{if lt $i 12}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else}}<td><span class="lg-num lg-num--income">{{money $v}}</span></td>{{end}}
+            {{end}}
+          {{end}}
+          <td><span class="lg-num lg-num--income">{{money $incomeYTD}}</span></td>
+        </tr>
+
+        <!-- COST -->
+        <tr class="is-section"><td colspan="14">成本</td></tr>
+        {{range $p.Cost}}
+          <tr>
+            <td>{{.CategoryName}}</td>
+            {{range $i, $v := .Monthly}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else}}<td><span class="lg-num lg-num--cost">{{money $v}}</span></td>{{end}}
+            {{end}}
+            {{if eq .YTD 0}}<td><span class="zero">0.00</span></td>
+            {{else}}<td><span class="lg-num lg-num--cost">{{money .YTD}}</span></td>{{end}}
+          </tr>
+        {{end}}
+        <tr class="is-total">
+          <td>總銷貨成本</td>
+          {{range $i, $v := $p.CostTotal}}
+            {{if lt $i 12}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else}}<td><span class="lg-num lg-num--cost">{{money $v}}</span></td>{{end}}
+            {{end}}
+          {{end}}
+          {{if eq $costYTD 0}}<td><span class="zero">0.00</span></td>
+          {{else}}<td><span class="lg-num lg-num--cost">{{money $costYTD}}</span></td>{{end}}
+        </tr>
+
+        <!-- GROSS -->
+        <tr class="is-highlight">
+          <td>毛利</td>
+          {{range $i, $v := $p.GrossProfit}}
+            {{if lt $i 12}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else if lt $v 0}}<td><span class="lg-num lg-num--expense">{{money $v}}</span></td>
+              {{else}}<td><span class="lg-num lg-num--income">{{money $v}}</span></td>{{end}}
+            {{end}}
+          {{end}}
+          {{if lt $grossYTD 0}}<td><span class="lg-num lg-num--expense">{{money $grossYTD}}</span></td>
+          {{else}}<td><span class="lg-num lg-num--income">{{money $grossYTD}}</span></td>{{end}}
+        </tr>
+
+        <!-- EXPENSES -->
+        <tr class="is-section"><td colspan="14">費用</td></tr>
+        {{range $p.Expense}}
+          <tr>
+            <td>{{.CategoryName}}</td>
+            {{range $i, $v := .Monthly}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else}}<td><span class="lg-num lg-num--expense">{{money $v}}</span></td>{{end}}
+            {{end}}
+            {{if eq .YTD 0}}<td><span class="zero">0.00</span></td>
+            {{else}}<td><span class="lg-num lg-num--expense">{{money .YTD}}</span></td>{{end}}
+          </tr>
+        {{end}}
+        <tr class="is-total">
+          <td>總費用</td>
+          {{range $i, $v := $p.ExpenseTotal}}
+            {{if lt $i 12}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else}}<td><span class="lg-num lg-num--expense">{{money $v}}</span></td>{{end}}
+            {{end}}
+          {{end}}
+          {{if eq $expYTD 0}}<td><span class="zero">0.00</span></td>
+          {{else}}<td><span class="lg-num lg-num--expense">{{money $expYTD}}</span></td>{{end}}
+        </tr>
+
+        <!-- NET -->
+        <tr class="is-highlight">
+          <td>淨利 (損)</td>
+          {{range $i, $v := $p.NetProfit}}
+            {{if lt $i 12}}
+              {{if eq $v 0}}<td><span class="zero">0.00</span></td>
+              {{else if lt $v 0}}<td><span class="lg-num lg-num--expense">{{money $v}}</span></td>
+              {{else}}<td><span class="lg-num lg-num--income">{{money $v}}</span></td>{{end}}
+            {{end}}
+          {{end}}
+          {{if lt $netYTD 0}}<td><span class="lg-num lg-num--expense">{{money $netYTD}}</span></td>
+          {{else}}<td><span class="lg-num lg-num--income">{{money $netYTD}}</span></td>{{end}}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+{{template "base" .}}

@@ -1,0 +1,72 @@
+{{define "content"}}
+<div class="lg-page-head">
+  <div class="lg-page-head__title-block">
+    <span class="lg-page-eyebrow">STRUCTURE</span>
+    <h1 class="lg-page-title">
+      專案<span class="lg-page-title__suffix">Projects</span>
+    </h1>
+    <p style="margin:0; font-family:var(--font-body-cn); color:var(--text-muted); font-size:14px;">
+      {{len .Projects}} 個專案 · 用於追蹤客戶/案件損益
+    </p>
+  </div>
+</div>
+
+<section class="lg-panel">
+  <div class="lg-panel__head">
+    <div>
+      <h3 class="lg-panel__title">新增專案</h3>
+      <p class="lg-panel__sub">建立後可在新增交易時掛載專案</p>
+    </div>
+  </div>
+  <form method="post" action="/projects" style="display:grid; grid-template-columns: 2fr 1fr 1fr 100px; gap:12px; align-items:end;">
+    <div class="lg-field">
+      <label class="lg-field__label">專案名稱</label>
+      <input class="lg-input" type="text" name="name" placeholder="例：客戶 A · 顧問" required>
+    </div>
+    <div class="lg-field">
+      <label class="lg-field__label">起始日期</label>
+      <input class="lg-input" type="date" name="start_date">
+    </div>
+    <div class="lg-field">
+      <label class="lg-field__label">結束日期</label>
+      <input class="lg-input" type="date" name="end_date">
+    </div>
+    <button class="lg-btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      新增
+    </button>
+  </form>
+</section>
+
+<div class="lg-proj-grid">
+  {{range .Projects}}
+  <div class="lg-proj-card">
+    <div class="lg-proj-card__head">
+      <div>
+        <h4 class="lg-proj-card__name">{{.Name}}</h4>
+        <p class="lg-proj-card__code">{{printf "P-%04d" .ID}}</p>
+      </div>
+      <form method="post" action="/projects/{{.ID}}/delete" style="display:inline;" onsubmit="return confirm('刪除「{{.Name}}」？')">
+        <button class="lg-row-action is-danger" title="刪除">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </form>
+    </div>
+    {{if or .StartDate.Valid .EndDate.Valid}}
+    <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); letter-spacing:0.04em;">
+      {{if .StartDate.Valid}}{{.StartDate.String}}{{else}}—{{end}}
+      <span style="opacity:0.5;"> → </span>
+      {{if .EndDate.Valid}}{{.EndDate.String}}{{else}}—{{end}}
+    </div>
+    {{end}}
+    {{if .Note}}<p style="font-family:var(--font-body-cn); font-size:12.5px; color:var(--text-muted); margin:0; line-height:1.6;">{{.Note}}</p>{{end}}
+  </div>
+  {{else}}
+  <div class="lg-empty" style="grid-column: 1 / -1;">
+    <p class="lg-empty__title">尚無專案</p>
+    <p class="lg-empty__sub">用上方表單建立第一個專案</p>
+  </div>
+  {{end}}
+</div>
+{{end}}
+{{template "base" .}}

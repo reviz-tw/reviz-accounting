@@ -1,0 +1,140 @@
+package main
+
+import (
+	"bufio"
+	"embed"
+	"flag"
+	"fmt"
+	"io/fs"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"golang.org/x/term"
+
+	"github.com/hcchien/reviz-accounting/internal/auth"
+	"github.com/hcchien/reviz-accounting/internal/db"
+	"github.com/hcchien/reviz-accounting/internal/handlers"
+)
+
+//go:embed web/templates/*.html
+var templatesFS embed.FS
+
+//go:embed all:web/static
+var staticFS embed.FS
+
+//go:embed web/static/template/simpany-v0.4.0.xlsx
+var simpanyTemplate []byte
+
+func main() {
+	var (
+		addr       = flag.String("addr", ":8080", "HTTP listen address")
+		dbPath     = flag.String("db", "data/reviz.db", "SQLite database file")
+		createUser = flag.String("create-user", "", "Create a user with this username (prompts for password) and exit")
+		createRole = flag.String("create-role", "owner", "Role for -create-user (owner|accountant|viewer)")
+	)
+	flag.Parse()
+
+	if err := os.MkdirAll(filepath.Dir(*dbPath), 0o755); err != nil {
+		log.Fatalf("mkdir: %v", err)
+	}
+	d, err := db.Open(*dbPath)
+	if err != nil {
+		log.Fatalf("open db: %v", err)
+	}
+	defer d.Close()
+
+	if err := db.SeedIfEmpty(d); err != nil {
+		log.Fatalf("seed: %v", err)
+	}
+
+	if *createUser != "" {
+		pw, err := readPasswordInteractive("輸入密碼 (≥ 6 字元): ")
+		if err != nil {
+			log.Fatalf("讀取密碼失敗: %v", err)
+		}
+		confirm, err := readPasswordInteractive("再次輸入密碼: ")
+		if err != nil {
+			log.Fatalf("讀取密碼失敗: %v", err)
+		}
+		if pw != confirm {
+			log.Fatal("兩次密碼不一致")
+		}
+		u, err := auth.CreateUser(d, *createUser, pw, *createRole)
+		if err != nil {
+			log.Fatalf("建立使用者失敗: %v", err)
+		}
+		fmt.Printf("✓ 已建立 %s (role=%s, id=%d)\n", u.Username, u.Role, u.ID)
+		return
+	}
+
+	if n, _ := auth.CountUsers(d); n == 0 {
+		log.Println("⚠️  尚未建立任何使用者。請先執行：")
+		log.Println("    ./reviz-accounting -create-user <帳號>")
+		log.Println("    （預設角色 owner，可用 -create-role accountant|viewer 更改）")
+	}
+
+	go func() {
+		t := time.NewTicker(6 * time.Hour)
+		defer t.Stop()
+		for range t.C {
+			_ = auth.PurgeExpiredSessions(d)
+		}
+	}()
+
+	srv, err := handlers.NewServer(d, templatesFS)
+	if err != nil {
+		log.Fatalf("init server: %v", err)
+	}
+	srv.SimpanyTemplate = simpanyTemplate
+
+	mux := http.NewServeMux()
+	srv.Routes(mux)
+
+	// Static assets (CSS, fonts, images) — embedded into the binary.
+	staticSub, err := fs.Sub(staticFS, "web/static")
+	if err != nil {
+		log.Fatalf("static sub-fs: %v", err)
+	}
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticSub))))
+
+	handler := withLogging(auth.Attach(d, mux))
+
+	log.Printf("reviz-accounting listening on http://localhost%s (db=%s)", *addr, *dbPath)
+	if err := http.ListenAndServe(*addr, handler); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func withLogging(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.Path)
+		h.ServeHTTP(w, r)
+	})
+}
+
+// stdinReader is shared across calls so bufio's read-ahead buffer is not
+// discarded between password prompts when stdin is piped.
+var stdinReader = bufio.NewReader(os.Stdin)
+
+// readPasswordInteractive reads a password without echo when running in a
+// terminal; otherwise it reads a line from stdin (used for piped input).
+func readPasswordInteractive(prompt string) (string, error) {
+	fmt.Fprint(os.Stderr, prompt)
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		b, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(b)), nil
+	}
+	line, err := stdinReader.ReadString('\n')
+	if err != nil && line == "" {
+		return "", err
+	}
+	return strings.TrimRight(line, "\r\n"), nil
+}

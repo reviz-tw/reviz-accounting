@@ -1,0 +1,229 @@
+/* ========================================================================
+   ReViz Design System — Tokens
+   v1.0 · 2026
+   ======================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------
+     BRAND — Lavender Purple Scale
+     Derived from logo dot. OKLCH for perceptual evenness.
+     --------------------------------------------------------------- */
+  --brand-50:  oklch(0.975 0.012 295);
+  --brand-100: oklch(0.945 0.025 295);
+  --brand-200: oklch(0.895 0.045 295);
+  --brand-300: oklch(0.830 0.065 295);
+  --brand-400: oklch(0.760 0.085 295);   /* logo dot — base brand */
+  --brand-500: oklch(0.685 0.105 295);   /* primary / interactive */
+  --brand-600: oklch(0.585 0.125 295);
+  --brand-700: oklch(0.475 0.125 295);
+  --brand-800: oklch(0.370 0.105 295);
+  --brand-900: oklch(0.275 0.080 295);
+  --brand-950: oklch(0.190 0.055 295);
+
+  /* ---------------------------------------------------------------
+     NEUTRAL — Cool slate (very faint purple bias for cohesion)
+     Explicitly NOT beige.
+     --------------------------------------------------------------- */
+  --ink-0:    oklch(1     0     0);
+  --ink-25:   oklch(0.990 0.003 290);
+  --ink-50:   oklch(0.975 0.005 290);
+  --ink-100:  oklch(0.955 0.007 290);
+  --ink-200:  oklch(0.915 0.010 290);
+  --ink-300:  oklch(0.855 0.012 290);
+  --ink-400:  oklch(0.720 0.014 290);
+  --ink-500:  oklch(0.580 0.014 290);
+  --ink-600:  oklch(0.455 0.014 290);
+  --ink-700:  oklch(0.355 0.014 290);
+  --ink-800:  oklch(0.255 0.014 290);
+  --ink-900:  oklch(0.180 0.014 290);
+  --ink-950:  oklch(0.130 0.016 290);
+  --ink-1000: oklch(0.080 0.016 290);
+
+  /* ---------------------------------------------------------------
+     FUNCTIONAL COLORS
+     Tuned to harmonize with lavender — slightly desaturated,
+     refined rather than primary-bright.
+     --------------------------------------------------------------- */
+  --success-50:  oklch(0.965 0.025 155);
+  --success-100: oklch(0.925 0.045 155);
+  --success-500: oklch(0.620 0.115 155);   /* sage green */
+  --success-600: oklch(0.520 0.115 155);
+  --success-700: oklch(0.420 0.105 155);
+
+  --warning-50:  oklch(0.975 0.025 80);
+  --warning-100: oklch(0.935 0.055 80);
+  --warning-500: oklch(0.750 0.130 80);    /* warm amber */
+  --warning-600: oklch(0.660 0.135 80);
+  --warning-700: oklch(0.530 0.125 80);
+
+  --danger-50:   oklch(0.970 0.020 20);
+  --danger-100:  oklch(0.925 0.045 20);
+  --danger-500:  oklch(0.640 0.180 22);    /* coral red */
+  --danger-600:  oklch(0.555 0.190 22);
+  --danger-700:  oklch(0.450 0.175 22);
+
+  --info-50:     oklch(0.965 0.025 240);
+  --info-100:    oklch(0.920 0.050 240);
+  --info-500:    oklch(0.640 0.130 240);   /* refined blue */
+  --info-600:    oklch(0.540 0.140 240);
+  --info-700:    oklch(0.435 0.130 240);
+
+  /* ---------------------------------------------------------------
+     SEMANTIC — Light mode (default)
+     --------------------------------------------------------------- */
+  --bg-canvas:    var(--ink-25);
+  --bg-base:      var(--ink-0);
+  --bg-elevated:  var(--ink-0);
+  --bg-sunken:    var(--ink-100);
+  --bg-muted:     var(--ink-100);
+  --bg-inverse:   var(--ink-950);
+
+  --surface-tint:    oklch(0.975 0.018 295);
+  --surface-overlay: oklch(0.130 0.016 290 / 0.55);
+
+  --border-subtle: var(--ink-200);
+  --border-base:   var(--ink-300);
+  --border-strong: var(--ink-400);
+  --border-brand:  var(--brand-400);
+
+  --text-strong:  var(--ink-950);
+  --text-base:    var(--ink-800);
+  --text-muted:   var(--ink-600);
+  --text-faint:   var(--ink-500);
+  --text-inverse: var(--ink-0);
+  --text-brand:   var(--brand-700);
+  --text-on-brand: var(--ink-0);
+
+  --accent:        var(--brand-500);
+  --accent-hover:  var(--brand-600);
+  --accent-active: var(--brand-700);
+  --accent-soft:   var(--brand-100);
+  --accent-ghost:  oklch(0.685 0.105 295 / 0.10);
+
+  --focus-ring: oklch(0.685 0.105 295 / 0.35);
+
+  /* ---------------------------------------------------------------
+     TYPOGRAPHY
+     --------------------------------------------------------------- */
+  --font-serif-cn: "Noto Serif TC", "Source Han Serif TC", "PMingLiU", serif;
+  --font-serif-en: "Cormorant Garamond", "Source Serif 4", "Source Serif Pro", Georgia, serif;
+  --font-body-cn: "Noto Serif TC", "Source Han Serif TC", "PMingLiU", serif;
+  --font-body-en: "Source Serif 4", "Lora", Georgia, serif;
+  --font-sans:    "Inter Tight", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Type scale — major third-ish */
+  --text-display:    clamp(56px, 6vw, 88px);
+  --text-h1:         clamp(40px, 4vw, 56px);
+  --text-h2:         clamp(28px, 2.6vw, 36px);
+  --text-h3:         24px;
+  --text-h4:         20px;
+  --text-body-lg:    18px;
+  --text-body:       16px;
+  --text-body-sm:    14px;
+  --text-caption:    12px;
+  --text-eyebrow:    11px;
+
+  /* Line heights */
+  --lh-display: 1.04;
+  --lh-tight:   1.12;
+  --lh-snug:    1.32;
+  --lh-base:    1.58;
+  --lh-loose:   1.8;
+
+  /* ---------------------------------------------------------------
+     SPACING — 4px grid
+     --------------------------------------------------------------- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ---------------------------------------------------------------
+     RADII
+     --------------------------------------------------------------- */
+  --r-xs:   4px;
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-xl:   20px;
+  --r-2xl:  28px;
+  --r-full: 999px;
+
+  /* ---------------------------------------------------------------
+     SHADOWS — Soft, modern, low-contrast
+     --------------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px oklch(0.18 0.014 290 / 0.05);
+  --shadow-sm: 0 2px 4px oklch(0.18 0.014 290 / 0.06), 0 1px 2px oklch(0.18 0.014 290 / 0.04);
+  --shadow-md: 0 6px 16px oklch(0.18 0.014 290 / 0.08), 0 2px 4px oklch(0.18 0.014 290 / 0.04);
+  --shadow-lg: 0 16px 40px oklch(0.18 0.014 290 / 0.12), 0 4px 8px oklch(0.18 0.014 290 / 0.04);
+  --shadow-xl: 0 32px 64px oklch(0.18 0.014 290 / 0.18), 0 8px 16px oklch(0.18 0.014 290 / 0.06);
+  --shadow-brand: 0 8px 24px oklch(0.685 0.105 295 / 0.28);
+
+  /* ---------------------------------------------------------------
+     MOTION
+     --------------------------------------------------------------- */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --t-fast:   120ms;
+  --t-base:   200ms;
+  --t-slow:   360ms;
+
+  /* Layout */
+  --container: 1240px;
+  --gutter:    32px;
+}
+
+/* ===================================================================
+   DARK MODE
+   =================================================================== */
+[data-theme="dark"] {
+  --bg-canvas:    var(--ink-1000);
+  --bg-base:      var(--ink-950);
+  --bg-elevated:  var(--ink-900);
+  --bg-sunken:    var(--ink-1000);
+  --bg-muted:     var(--ink-900);
+  --bg-inverse:   var(--ink-50);
+
+  --surface-tint:    oklch(0.190 0.030 295);
+  --surface-overlay: oklch(0.05 0.016 290 / 0.65);
+
+  --border-subtle: oklch(0.255 0.014 290);
+  --border-base:   oklch(0.305 0.014 290);
+  --border-strong: oklch(0.405 0.014 290);
+  --border-brand:  var(--brand-500);
+
+  --text-strong:  var(--ink-50);
+  --text-base:    var(--ink-200);
+  --text-muted:   var(--ink-400);
+  --text-faint:   var(--ink-500);
+  --text-inverse: var(--ink-950);
+  --text-brand:   var(--brand-300);
+  --text-on-brand: var(--ink-950);
+
+  --accent:        var(--brand-400);
+  --accent-hover:  var(--brand-300);
+  --accent-active: var(--brand-200);
+  --accent-soft:   oklch(0.275 0.080 295);
+  --accent-ghost:  oklch(0.760 0.085 295 / 0.14);
+
+  --focus-ring:    oklch(0.760 0.085 295 / 0.45);
+
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.45);
+  --shadow-sm: 0 2px 4px oklch(0 0 0 / 0.5), 0 1px 2px oklch(0 0 0 / 0.35);
+  --shadow-md: 0 6px 16px oklch(0 0 0 / 0.55), 0 2px 4px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 16px 40px oklch(0 0 0 / 0.6),  0 4px 8px oklch(0 0 0 / 0.35);
+  --shadow-xl: 0 32px 64px oklch(0 0 0 / 0.65), 0 8px 16px oklch(0 0 0 / 0.4);
+  --shadow-brand: 0 8px 24px oklch(0.760 0.085 295 / 0.35);
+}
