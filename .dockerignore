@@ -1,0 +1,30 @@
+# Exclude things that don't need to be in the build context.
+
+# Runtime data + local binary
+/data/
+/reviz-accounting
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI / docs
+cloudbuild.yaml
+Dockerfile
+.dockerignore
+README.md
+
+# Editor / OS noise
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Test artefacts
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov

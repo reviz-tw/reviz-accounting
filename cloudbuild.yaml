@@ -1,0 +1,82 @@
+# Cloud Build pipeline: build image, push to Artifact Registry, deploy to Cloud Run.
+#
+# Submit manually:
+#   gcloud builds submit \
+#     --substitutions=_REGION=asia-east1,_REPO=reviz,_SERVICE=reviz-accounting,_BUCKET=$PROJECT_ID-reviz-data
+#
+# Or wire it to a GitHub trigger.
+#
+# Prerequisites (one-time setup, see README "Cloud Run deploy" section):
+#   - Artifact Registry repo:     gcloud artifacts repositories create $_REPO --repository-format=docker --location=$_REGION
+#   - GCS bucket for SQLite data: gcloud storage buckets create gs://$_BUCKET --location=$_REGION
+#   - Cloud Build SA roles:       roles/run.admin, roles/iam.serviceAccountUser, roles/storage.objectAdmin
+
+substitutions:
+  _REGION:          "asia-east1"
+  _REPO:            "reviz"
+  _SERVICE:         "reviz-accounting"
+  _BUCKET:          "${PROJECT_ID}-reviz-data"
+  _MIN_INSTANCES:   "1"
+  _MAX_INSTANCES:   "1"
+  _CPU:             "1"
+  _MEMORY:          "512Mi"
+
+# IMAGE = ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+steps:
+  # ---------- Build ----------
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=VERSION=${SHORT_SHA}
+      - --tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+      - --tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest
+      - .
+
+  # ---------- Push ----------
+  - id: push-sha
+    name: gcr.io/cloud-builders/docker
+    args: [push, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}"]
+    waitFor: [build]
+  - id: push-latest
+    name: gcr.io/cloud-builders/docker
+    args: [push, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest"]
+    waitFor: [build]
+
+  # ---------- Deploy to Cloud Run ----------
+  #
+  # SQLite needs a stable filesystem. We mount a GCS bucket at /data via the
+  # Cloud Run gen2 execution environment. To make SQLite locking safe, the
+  # service is pinned to a single instance (min/max = 1).
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+      - --region=${_REGION}
+      - --platform=managed
+      - --execution-environment=gen2
+      - --min-instances=${_MIN_INSTANCES}
+      - --max-instances=${_MAX_INSTANCES}
+      - --cpu=${_CPU}
+      - --memory=${_MEMORY}
+      - --concurrency=80
+      - --port=8080
+      - --no-allow-unauthenticated
+      - --add-volume=name=data,type=cloud-storage,bucket=${_BUCKET}
+      - --add-volume-mount=volume=data,mount-path=/data
+      - --labels=managed-by=cloudbuild,app=reviz-accounting
+    waitFor: [push-sha]
+
+images:
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest"
+
+timeout: 1200s

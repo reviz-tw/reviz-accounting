@@ -30,8 +30,12 @@ var staticFS embed.FS
 var simpanyTemplate []byte
 
 func main() {
+	defaultAddr := ":8080"
+	if p := os.Getenv("PORT"); p != "" {
+		defaultAddr = ":" + p
+	}
 	var (
-		addr       = flag.String("addr", ":8080", "HTTP listen address")
+		addr       = flag.String("addr", defaultAddr, "HTTP listen address (overrides $PORT)")
 		dbPath     = flag.String("db", "data/reviz.db", "SQLite database file")
 		createUser = flag.String("create-user", "", "Create a user with this username (prompts for password) and exit")
 		createRole = flag.String("create-role", "owner", "Role for -create-user (owner|accountant|viewer)")
