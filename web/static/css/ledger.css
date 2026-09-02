@@ -765,6 +765,7 @@
 .lg-2col { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; align-items: start; }
 .lg-2col-eq { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 .lg-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.lg-category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; align-items: start; }
 
 /* ============ BREAKDOWN LIST ============ */
 .lg-breakdown { display: flex; flex-direction: column; gap: 14px; }

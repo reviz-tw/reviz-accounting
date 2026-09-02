@@ -31,6 +31,8 @@ func (s *Server) categoriesList(w http.ResponseWriter, r *http.Request) {
 			{"income", "收入", "var(--success-500)"},
 			{"cost", "成本", "var(--warning-500)"},
 			{"expense", "費用", "var(--danger-500)"},
+			{"equity", "股東權益", "var(--accent)"},
+			{"other", "其他", "var(--text-muted)"},
 		},
 		"Active": "categories",
 	})
