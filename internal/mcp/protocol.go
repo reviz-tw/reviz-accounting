@@ -113,6 +113,19 @@ func (s *Server) tool(u *auth.User, name string, a map[string]any) (any, error) 
 		if e == nil && u.Role != auth.RoleOwner {
 			v = mcpAccessibleProjects(s, u, v)
 		}
+		if e == nil {
+			status := str(a, "status")
+			if status == "" {
+				status = "active"
+			}
+			filtered := v[:0]
+			for _, p := range v {
+				if status == "all" || (status == "active" && p.Status != "completed") || p.Status == status {
+					filtered = append(filtered, p)
+				}
+			}
+			v = filtered
+		}
 		return content(v, e)
 	case "create_project":
 		if !u.AtLeast(auth.RoleAccountant) {
@@ -305,9 +318,9 @@ func tools() []map[string]any {
 	return []map[string]any{
 		{"name": "list_accounts", "description": "列出可用帳戶與 ID；建立交易時需要 from_account_id 或 to_account_id。accountant 以上。", "inputSchema": obj},
 		{"name": "list_categories", "description": "列出收入、成本與費用分類及 ID；建立交易時可帶 category_id。accountant 以上。", "inputSchema": obj},
-		{"name": "list_projects", "description": "列出專案", "inputSchema": obj},
-		{"name": "create_project", "description": "建立專案。傳 name；可選 start_date、end_date（YYYY-MM-DD）與 note。", "inputSchema": req("name")},
-		{"name": "update_project", "description": "更新既有專案。傳 project_id；可更新 name、start_date、end_date、note，至少提供一個要更新的欄位。", "inputSchema": req("project_id")},
+		{"name": "list_projects", "description": "列出專案；預設略過已結案。可傳 status：active（預設）、not_started、in_progress、completed 或 all。", "inputSchema": obj},
+		{"name": "create_project", "description": "建立專案。傳 name；可選 start_date、end_date（YYYY-MM-DD）、note 與 status(not_started|in_progress|completed，預設未啟動)。", "inputSchema": req("name")},
+		{"name": "update_project", "description": "更新既有專案。傳 project_id；可更新 name、start_date、end_date、note、status(not_started|in_progress|completed)，至少提供一個要更新的欄位。", "inputSchema": req("project_id")},
 		{"name": "get_project_budget", "description": "取得專案的總預算、收入進度、預定分配及已連結日記帳交易與分攤狀態。傳 project_id。", "inputSchema": req("project_id")},
 		{"name": "list_project_transactions", "description": "列出已連結到專案的日記帳交易，並標示每筆是否已有預算分攤。傳 project_id。", "inputSchema": req("project_id")},
 		{"name": "get_project_management", "description": "取得專案報價版本、角色、預估/實際工時、應收款與成本。viewer 以上可讀取；傳 project_id。", "inputSchema": req("project_id")},
@@ -480,16 +493,28 @@ func mcpAccessibleProjects(s *Server, u *auth.User, projects []models.Project) [
 	return out
 }
 
+func validProjectStatus(status string) bool {
+	return status == "not_started" || status == "in_progress" || status == "completed"
+}
+
 func (s *Server) createProjectForUser(u *auth.User, a map[string]any) (any, error) {
 	name := strings.TrimSpace(str(a, "name"))
 	if name == "" {
 		return nil, fmtErr("name 必填")
+	}
+	status := str(a, "status")
+	if status == "" {
+		status = "not_started"
+	}
+	if !validProjectStatus(status) {
+		return nil, fmtErr("status 必須是 not_started、in_progress 或 completed")
 	}
 	id, err := models.CreateProject(s.DB, &models.Project{
 		Name:      name,
 		StartDate: models.NullStringFrom(str(a, "start_date")),
 		EndDate:   models.NullStringFrom(str(a, "end_date")),
 		Note:      str(a, "note"),
+		Status:    status,
 	})
 	if err != nil {
 		return nil, err
@@ -532,6 +557,14 @@ func (s *Server) updateProject(a map[string]any) (any, error) {
 		p.Note = str(a, "note")
 		updated = true
 	}
+	if _, ok := a["status"]; ok {
+		status := str(a, "status")
+		if !validProjectStatus(status) {
+			return nil, fmtErr("status 必須是 not_started、in_progress 或 completed")
+		}
+		p.Status = status
+		updated = true
+	}
 	if !updated {
 		return nil, fmtErr("請提供要更新的欄位")
 	}
@@ -543,6 +576,7 @@ func (s *Server) updateProject(a map[string]any) (any, error) {
 		"name":       p.Name,
 		"start_date": p.StartDate.String,
 		"end_date":   p.EndDate.String,
+		"status":     p.Status,
 		"note":       p.Note,
 	}, nil)
 }

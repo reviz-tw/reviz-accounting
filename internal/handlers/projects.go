@@ -27,11 +27,23 @@ func (s *Server) projectsList(w http.ResponseWriter, r *http.Request) {
 		}
 		projs = filtered
 	}
+	statusFilter := r.URL.Query().Get("status")
+	if statusFilter == "" {
+		statusFilter = "active"
+	}
+	filtered := projs[:0]
+	for _, p := range projs {
+		if statusFilter == "all" || (statusFilter == "active" && p.Status != "completed") || p.Status == statusFilter {
+			filtered = append(filtered, p)
+		}
+	}
+	projs = filtered
 	s.render(w, r, "projects.html", map[string]any{
-		"Title":    "專案",
-		"Crumbs":   []string{"專案"},
-		"Projects": projs,
-		"Active":   "projects",
+		"Title":        "專案",
+		"Crumbs":       []string{"專案"},
+		"Projects":     projs,
+		"StatusFilter": statusFilter,
+		"Active":       "projects",
 	})
 }
 
@@ -297,6 +309,7 @@ func (s *Server) projectCreate(w http.ResponseWriter, r *http.Request) {
 		StartDate: models.NullStringFrom(r.FormValue("start_date")),
 		EndDate:   models.NullStringFrom(r.FormValue("end_date")),
 		Note:      r.FormValue("note"),
+		Status:    projectStatus(r.FormValue("status")),
 	})
 	if err != nil {
 		s.error500(w, err)
@@ -328,11 +341,21 @@ func (s *Server) projectUpdate(w http.ResponseWriter, r *http.Request) {
 	p.StartDate = models.NullStringFrom(r.FormValue("start_date"))
 	p.EndDate = models.NullStringFrom(r.FormValue("end_date"))
 	p.Note = r.FormValue("note")
+	p.Status = projectStatus(r.FormValue("status"))
 	if err := models.UpdateProject(s.DB, p); err != nil {
 		s.error500(w, err)
 		return
 	}
 	http.Redirect(w, r, "/projects", http.StatusSeeOther)
+}
+
+func projectStatus(status string) string {
+	switch status {
+	case "not_started", "in_progress", "completed":
+		return status
+	default:
+		return "not_started"
+	}
 }
 
 func (s *Server) projectDelete(w http.ResponseWriter, r *http.Request) {

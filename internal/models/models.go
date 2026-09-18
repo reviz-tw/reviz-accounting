@@ -27,6 +27,7 @@ type Project struct {
 	StartDate sql.NullString
 	EndDate   sql.NullString
 	Note      string
+	Status    string // not_started | in_progress | completed
 }
 
 // Counterparty is a customer, supplier, or person involved in a transaction.

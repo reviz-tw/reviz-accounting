@@ -15,8 +15,12 @@ CREATE TABLE IF NOT EXISTS categories (
  sort_order INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS projects (
- id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, start_date TEXT, end_date TEXT, note TEXT NOT NULL DEFAULT ''
+ id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, start_date TEXT, end_date TEXT, note TEXT NOT NULL DEFAULT '',
+ status TEXT NOT NULL DEFAULT 'not_started' CHECK (status IN ('not_started','in_progress','completed'))
 );
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'not_started';
+ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_status_check;
+ALTER TABLE projects ADD CONSTRAINT projects_status_check CHECK (status IN ('not_started','in_progress','completed'));
 CREATE TABLE IF NOT EXISTS counterparties (
  id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, tax_id TEXT NOT NULL DEFAULT '', contact_name TEXT NOT NULL DEFAULT '',
  phone TEXT NOT NULL DEFAULT '', address TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', bank_name TEXT NOT NULL DEFAULT '',

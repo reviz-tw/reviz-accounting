@@ -198,7 +198,7 @@ func DeleteCategory(d *sql.DB, id int64) error {
 
 func ListProjects(d *sql.DB) ([]Project, error) {
 	rows, err := d.Query(
-		`SELECT id, name, start_date, end_date, note FROM projects ORDER BY id`,
+		`SELECT id, name, start_date, end_date, note, status FROM projects ORDER BY id`,
 	)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func ListProjects(d *sql.DB) ([]Project, error) {
 	var out []Project
 	for rows.Next() {
 		var p Project
-		if err := rows.Scan(&p.ID, &p.Name, &p.StartDate, &p.EndDate, &p.Note); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.StartDate, &p.EndDate, &p.Note, &p.Status); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -218,8 +218,8 @@ func ListProjects(d *sql.DB) ([]Project, error) {
 func GetProject(d *sql.DB, id int64) (*Project, error) {
 	var p Project
 	err := d.QueryRow(
-		`SELECT id, name, start_date, end_date, note FROM projects WHERE id=?`, id,
-	).Scan(&p.ID, &p.Name, &p.StartDate, &p.EndDate, &p.Note)
+		`SELECT id, name, start_date, end_date, note, status FROM projects WHERE id=?`, id,
+	).Scan(&p.ID, &p.Name, &p.StartDate, &p.EndDate, &p.Note, &p.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -228,14 +228,18 @@ func GetProject(d *sql.DB, id int64) (*Project, error) {
 
 func CreateProject(d *sql.DB, p *Project) (int64, error) {
 	var id int64
-	err := d.QueryRow(`INSERT INTO projects(name, start_date, end_date, note) VALUES(?,?,?,?) RETURNING id`, p.Name, nullableDate(p.StartDate), nullableDate(p.EndDate), p.Note).Scan(&id)
+	status := p.Status
+	if status == "" {
+		status = "not_started"
+	}
+	err := d.QueryRow(`INSERT INTO projects(name, start_date, end_date, note, status) VALUES(?,?,?,?,?) RETURNING id`, p.Name, nullableDate(p.StartDate), nullableDate(p.EndDate), p.Note, status).Scan(&id)
 	return id, err
 }
 
 func UpdateProject(d *sql.DB, p *Project) error {
 	_, err := d.Exec(
-		`UPDATE projects SET name=?, start_date=?, end_date=?, note=? WHERE id=?`,
-		p.Name, nullableDate(p.StartDate), nullableDate(p.EndDate), p.Note, p.ID,
+		`UPDATE projects SET name=?, start_date=?, end_date=?, note=?, status=? WHERE id=?`,
+		p.Name, nullableDate(p.StartDate), nullableDate(p.EndDate), p.Note, p.Status, p.ID,
 	)
 	return err
 }
