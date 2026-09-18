@@ -156,8 +156,12 @@ func (s *Server) Routes(mux *http.ServeMux) {
 	mux.Handle("GET /categories", owner(s.categoriesList))
 	mux.Handle("GET /projects", view(s.projectsList))
 	mux.Handle("GET /quotes", view(s.quotesList))
-	mux.Handle("GET /quotes/{id}", view(func(w http.ResponseWriter, r *http.Request) { s.requireQuoteAccess(false, s.quoteDetail).ServeHTTP(w, r) }))
-	mux.Handle("GET /quotes/{id}/print", view(func(w http.ResponseWriter, r *http.Request) { s.requireQuoteAccess(false, s.quotePrint).ServeHTTP(w, r) }))
+	mux.Handle("GET /quotes/{id}", view(func(w http.ResponseWriter, r *http.Request) {
+		s.requireQuoteAccess(false, s.quoteDetail).ServeHTTP(w, r)
+	}))
+	mux.Handle("GET /quotes/{id}/print", view(func(w http.ResponseWriter, r *http.Request) {
+		s.requireQuoteAccess(false, s.quotePrint).ServeHTTP(w, r)
+	}))
 	mux.Handle("GET /projects/{id}/budget", view(func(w http.ResponseWriter, r *http.Request) { s.projectRead(s.projectBudgetPage).ServeHTTP(w, r) }))
 	mux.Handle("GET /projects/{id}/management", view(func(w http.ResponseWriter, r *http.Request) { s.projectRead(s.projectManagementPage).ServeHTTP(w, r) }))
 	mux.Handle("GET /projects/{id}/summary", view(func(w http.ResponseWriter, r *http.Request) { s.projectRead(s.projectSummary).ServeHTTP(w, r) }))
@@ -212,6 +216,7 @@ func (s *Server) Routes(mux *http.ServeMux) {
 	mux.Handle("POST /projects/{id}/milestones", projectPost(s.projectMilestoneCreate))
 	mux.Handle("POST /projects/{id}/milestones/{milestoneID}/delete", projectPost(s.projectMilestoneDelete))
 	mux.Handle("POST /projects/{id}/allocations", projectPost(s.projectAllocationCreate))
+	mux.Handle("POST /projects/{id}/allocations/{allocationID}", projectPost(s.projectAllocationUpdate))
 	mux.Handle("POST /projects/{id}/allocations/{allocationID}/delete", projectPost(s.projectAllocationDelete))
 	mux.Handle("POST /projects/{id}", projectPost(s.projectUpdate))
 	mux.Handle("POST /projects/{id}/delete", projectPost(s.projectDelete))

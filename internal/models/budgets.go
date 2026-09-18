@@ -153,6 +153,36 @@ func BudgetAllocationBelongsToProject(d *sql.DB, allocationID, projectID int64) 
 	return ok, err
 }
 
+// GetProjectBudgetAllocation returns one allocation only when it belongs to
+// the supplied project. This keeps edit operations scoped to their project.
+func GetProjectBudgetAllocation(d *sql.DB, projectID, allocationID int64) (*BudgetAllocation, error) {
+	a := &BudgetAllocation{}
+	err := d.QueryRow(`SELECT id,project_id,recipient_kind,COALESCE(counterparty_id,0),counterparty_id IS NOT NULL,recipient_name,planned_amount_cents FROM project_budget_allocations WHERE id=? AND project_id=?`, allocationID, projectID).Scan(&a.ID, &a.ProjectID, &a.RecipientKind, &a.CounterpartyID, &a.CounterpartyValid, &a.RecipientName, &a.PlannedAmountCents)
+	return a, err
+}
+
+// UpdateProjectBudgetAllocation updates the editable planning details. The
+// recipient kind is intentionally structural: changing it after journal
+// postings exist would reinterpret historical payment allocations.
+func UpdateProjectBudgetAllocation(d *sql.DB, a *BudgetAllocation) error {
+	var cp any
+	if a.CounterpartyValid {
+		cp = a.CounterpartyID
+	}
+	result, err := d.Exec(`UPDATE project_budget_allocations SET counterparty_id=?,recipient_name=?,planned_amount_cents=? WHERE id=? AND project_id=?`, cp, a.RecipientName, a.PlannedAmountCents, a.ID, a.ProjectID)
+	if err != nil {
+		return err
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if changed != 1 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func GetProjectBudgetReport(d *sql.DB, projectID int64) (ProjectBudgetReport, error) {
 	r := ProjectBudgetReport{PaidByAllocation: map[int64]int64{}}
 	if err := d.QueryRow(`SELECT COALESCE(SUM(amount_cents),0) FROM transactions WHERE project_id=? AND to_account_id IS NOT NULL AND from_account_id IS NULL`, projectID).Scan(&r.IncomeCents); err != nil {
@@ -175,6 +205,21 @@ func GetProjectBudgetReport(d *sql.DB, projectID int64) (ProjectBudgetReport, er
 func DeleteBudgetAllocation(d *sql.DB, id int64) error {
 	_, e := d.Exec(`DELETE FROM project_budget_allocations WHERE id=?`, id)
 	return e
+}
+
+func DeleteProjectBudgetAllocation(d *sql.DB, projectID, allocationID int64) error {
+	result, err := d.Exec(`DELETE FROM project_budget_allocations WHERE id=? AND project_id=?`, allocationID, projectID)
+	if err != nil {
+		return err
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if changed != 1 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func ListBudgetPostings(d *sql.DB, transactionID int64) ([]BudgetPosting, error) {

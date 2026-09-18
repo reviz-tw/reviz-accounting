@@ -15,6 +15,7 @@ func TestBudgetToolsAreAdvertised(t *testing.T) {
 		"list_project_transactions": false,
 		"save_project_budget":       false,
 		"create_budget_allocation":  false,
+		"update_budget_allocation":  false,
 		"create_budget_posting":     false,
 	}
 	for _, tool := range tools() {

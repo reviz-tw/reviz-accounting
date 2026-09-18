@@ -48,3 +48,32 @@ func TestCrossProjectBudgetPostingsShareOnePaymentLimit(t *testing.T) {
 		t.Fatalf("project B posting count = %d, want 2", counts[10])
 	}
 }
+
+func TestUpdateProjectBudgetAllocationIsProjectScoped(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	_, err = db.Exec(`CREATE TABLE project_budget_allocations (id INTEGER PRIMARY KEY, project_id INTEGER NOT NULL, recipient_kind TEXT NOT NULL, counterparty_id INTEGER, recipient_name TEXT NOT NULL, planned_amount_cents INTEGER NOT NULL);
+		INSERT INTO project_budget_allocations(id,project_id,recipient_kind,recipient_name,planned_amount_cents) VALUES(1,10,'cost_expense','舊項目',100);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := GetProjectBudgetAllocation(db, 10, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.RecipientName, a.PlannedAmountCents = "新項目", 250
+	if err := UpdateProjectBudgetAllocation(db, a); err != nil {
+		t.Fatal(err)
+	}
+	updated, err := GetProjectBudgetAllocation(db, 10, 1)
+	if err != nil || updated.RecipientName != "新項目" || updated.PlannedAmountCents != 250 || updated.RecipientKind != "cost_expense" {
+		t.Fatalf("updated allocation = %#v, err=%v", updated, err)
+	}
+	a.ProjectID = 99
+	if err := UpdateProjectBudgetAllocation(db, a); err != sql.ErrNoRows {
+		t.Fatalf("cross-project update error = %v, want sql.ErrNoRows", err)
+	}
+}

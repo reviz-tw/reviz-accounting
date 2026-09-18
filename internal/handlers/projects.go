@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/hcchien/reviz-accounting/internal/auth"
 	"github.com/hcchien/reviz-accounting/internal/models"
@@ -106,6 +108,18 @@ func (s *Server) projectBudgetPage(w http.ResponseWriter, r *http.Request) {
 		s.error500(w, err)
 		return
 	}
+	var editingAllocation *models.BudgetAllocation
+	if editingID := parseInt64(r.URL.Query().Get("edit_allocation_id")); editingID > 0 {
+		editingAllocation, err = models.GetProjectBudgetAllocation(s.DB, id, editingID)
+		if err == sql.ErrNoRows {
+			http.Error(w, "找不到預定分配", http.StatusNotFound)
+			return
+		}
+		if err != nil {
+			s.error500(w, err)
+			return
+		}
+	}
 	report, err := models.GetProjectBudgetReport(s.DB, id)
 	if err != nil {
 		s.error500(w, err)
@@ -171,7 +185,7 @@ func (s *Server) projectBudgetPage(w http.ResponseWriter, r *http.Request) {
 		overallocatedTotal = -unallocatedTotal
 	}
 	cps, _ := models.ListCounterparties(s.DB, "")
-	s.render(w, r, "project_budget.html", map[string]any{"Title": "專案預算", "Crumbs": []string{"專案", p.Name, "預算"}, "Project": p, "Budget": b, "Allocations": views, "ProjectTransactions": txViews, "JournalAllocationFilter": filterID, "Counterparties": cps, "ActualIncome": report.IncomeCents, "PlannedTotal": plannedTotal, "PlannedCompany": plannedCompany, "AccruedTotal": accruedTotal, "ActualPaidTotal": actualPaidTotal, "UnallocatedTotal": unallocatedTotal, "OverallocatedTotal": overallocatedTotal, "CanWrite": canWrite, "Active": "projects"})
+	s.render(w, r, "project_budget.html", map[string]any{"Title": "專案預算", "Crumbs": []string{"專案", p.Name, "預算"}, "Project": p, "Budget": b, "Allocations": views, "EditingAllocation": editingAllocation, "ProjectTransactions": txViews, "JournalAllocationFilter": filterID, "Counterparties": cps, "ActualIncome": report.IncomeCents, "PlannedTotal": plannedTotal, "PlannedCompany": plannedCompany, "AccruedTotal": accruedTotal, "ActualPaidTotal": actualPaidTotal, "UnallocatedTotal": unallocatedTotal, "OverallocatedTotal": overallocatedTotal, "CanWrite": canWrite, "Active": "projects"})
 }
 
 func (s *Server) projectBudgetSave(w http.ResponseWriter, r *http.Request) {
@@ -226,8 +240,45 @@ func (s *Server) projectAllocationCreate(w http.ResponseWriter, r *http.Request)
 	}
 	http.Redirect(w, r, "/projects/"+pid+"/budget", 303)
 }
+func (s *Server) projectAllocationUpdate(w http.ResponseWriter, r *http.Request) {
+	projectID := parseInt64(r.PathValue("id"))
+	allocationID := parseInt64(r.PathValue("allocationID"))
+	a, err := models.GetProjectBudgetAllocation(s.DB, projectID, allocationID)
+	if err == sql.ErrNoRows {
+		http.Error(w, "找不到預定分配", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		s.error500(w, err)
+		return
+	}
+	amount, err := money.ParseCents(r.FormValue("planned_amount"))
+	name := strings.TrimSpace(r.FormValue("recipient_name"))
+	if err != nil || amount < 0 || name == "" {
+		http.Error(w, "請填寫分配項目與金額", http.StatusBadRequest)
+		return
+	}
+	a.RecipientName, a.PlannedAmountCents = name, amount
+	a.CounterpartyID, a.CounterpartyValid = 0, false
+	if counterpartyID := parseInt64(r.FormValue("counterparty_id")); counterpartyID > 0 {
+		a.CounterpartyID, a.CounterpartyValid = counterpartyID, true
+	}
+	if err := models.UpdateProjectBudgetAllocation(s.DB, a); err != nil {
+		s.error500(w, err)
+		return
+	}
+	http.Redirect(w, r, "/projects/"+r.PathValue("id")+"/budget", http.StatusSeeOther)
+}
 func (s *Server) projectAllocationDelete(w http.ResponseWriter, r *http.Request) {
-	_ = models.DeleteBudgetAllocation(s.DB, parseInt64(r.PathValue("allocationID")))
+	err := models.DeleteProjectBudgetAllocation(s.DB, parseInt64(r.PathValue("id")), parseInt64(r.PathValue("allocationID")))
+	if err == sql.ErrNoRows {
+		http.Error(w, "找不到預定分配", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		s.error500(w, err)
+		return
+	}
 	http.Redirect(w, r, "/projects/"+r.PathValue("id")+"/budget", 303)
 }
 

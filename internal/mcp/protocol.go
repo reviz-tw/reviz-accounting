@@ -222,7 +222,7 @@ func (s *Server) tool(u *auth.User, name string, a map[string]any) (any, error) 
 			return nil, err
 		}
 		return s.uploadReceipt(u, a)
-	case "save_project_budget", "create_budget_allocation", "create_budget_posting":
+	case "save_project_budget", "create_budget_allocation", "update_budget_allocation", "create_budget_posting":
 		if !u.AtLeast(auth.RoleAccountant) {
 			return nil, fmtErr("權限不足")
 		}
@@ -243,6 +243,8 @@ func (s *Server) tool(u *auth.User, name string, a map[string]any) (any, error) 
 			return s.saveProjectBudget(a)
 		case "create_budget_allocation":
 			return s.createBudgetAllocation(a)
+		case "update_budget_allocation":
+			return s.updateBudgetAllocation(a)
 		default:
 			return s.createBudgetPosting(a)
 		}
@@ -339,6 +341,7 @@ func tools() []map[string]any {
 		{"name": "upload_receipt", "description": "上傳並附加單據到既有交易。傳 transaction_id、filename、mime_type 與 content_base64；只接受 PDF、JPG、PNG、WebP，最大 20 MB。", "inputSchema": req("transaction_id", "filename", "mime_type", "content_base64")},
 		{"name": "save_project_budget", "description": "新增或更新專案總預算；amount 為分。傳 project_id、total_amount，可選 note。", "inputSchema": req("project_id", "total_amount")},
 		{"name": "create_budget_allocation", "description": "建立專案預定分配；金額為分。傳 project_id、recipient_kind(labor_compensation|company_reserve|cost_expense)、recipient_name、planned_amount。", "inputSchema": req("project_id", "recipient_kind", "recipient_name", "planned_amount")},
+		{"name": "update_budget_allocation", "description": "更新既有專案預定分配的名稱、交易對象與金額；用途類別固定，避免重解釋既有日記帳分攤。傳 project_id、budget_allocation_id、recipient_name、planned_amount；可選 counterparty_id，傳 0 清除。金額為分。", "inputSchema": req("project_id", "budget_allocation_id", "recipient_name", "planned_amount")},
 		{"name": "create_budget_posting", "description": "把既有付款拆分到一個專案預算項目。對同一 transaction_id 可重複呼叫以分攤至不同專案；所有現金分攤合計不得超過交易金額。傳 transaction_id、allocation_kind(partner_payout|cost_expense)、budget_allocation_id、amount(分)；可選 project_id 作為所選預算項目的歸屬驗證。", "inputSchema": req("transaction_id", "allocation_kind", "budget_allocation_id", "amount")},
 	}
 }
@@ -652,6 +655,29 @@ func (s *Server) createBudgetAllocation(a map[string]any) (any, error) {
 	}
 	id, err := models.CreateBudgetAllocation(s.DB, x)
 	return content(map[string]any{"id": id, "project_id": projectID}, err)
+}
+
+func (s *Server) updateBudgetAllocation(a map[string]any) (any, error) {
+	projectID, allocationID, amount := numID(a, "project_id"), numID(a, "budget_allocation_id"), numID(a, "planned_amount")
+	name := strings.TrimSpace(str(a, "recipient_name"))
+	if projectID <= 0 || allocationID <= 0 || amount < 0 || name == "" {
+		return nil, fmtErr("project_id、budget_allocation_id、recipient_name 與非負的 planned_amount（分）必填")
+	}
+	x, err := models.GetProjectBudgetAllocation(s.DB, projectID, allocationID)
+	if err == sql.ErrNoRows {
+		return nil, fmtErr("找不到專案預定分配")
+	}
+	if err != nil {
+		return nil, err
+	}
+	x.RecipientName, x.PlannedAmountCents = name, amount
+	if _, supplied := a["counterparty_id"]; supplied {
+		x.CounterpartyID, x.CounterpartyValid = 0, false
+		if counterpartyID := numID(a, "counterparty_id"); counterpartyID > 0 {
+			x.CounterpartyID, x.CounterpartyValid = counterpartyID, true
+		}
+	}
+	return content(map[string]any{"id": allocationID, "project_id": projectID}, models.UpdateProjectBudgetAllocation(s.DB, x))
 }
 
 func (s *Server) createBudgetPosting(a map[string]any) (any, error) {
