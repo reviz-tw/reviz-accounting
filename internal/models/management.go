@@ -298,7 +298,7 @@ func AcceptQuoteAndCreateProject(d *sql.DB, quoteID, sourceProjectID int64, requ
 	var copiedRoles []copiedRole
 	for roleRows.Next() {
 		var role copiedRole
-		var self bool
+		var self int
 		if err := roleRows.Scan(&role.oldID, &role.name, &role.rate, &role.flat, &self); err != nil {
 			roleRows.Close()
 			return 0, err
@@ -391,7 +391,7 @@ func AcceptQuoteAndCreateProject(d *sql.DB, quoteID, sourceProjectID int64, requ
 }
 
 func ListProjectRoles(d *sql.DB, projectID int64) ([]ProjectRole, error) {
-	rows, err := d.Query(`SELECT id,project_id,name,hourly_rate_cents,flat_fee_cents,is_self
+	rows, err := d.Query(`SELECT id,project_id,name,hourly_rate_cents,flat_fee_cents,is_self <> 0
 	 FROM project_roles WHERE project_id=$1 ORDER BY is_self DESC,id`, projectID)
 	if err != nil {
 		return nil, err
@@ -400,9 +400,11 @@ func ListProjectRoles(d *sql.DB, projectID int64) ([]ProjectRole, error) {
 	var out []ProjectRole
 	for rows.Next() {
 		var x ProjectRole
-		if err := rows.Scan(&x.ID, &x.ProjectID, &x.Name, &x.HourlyRateCents, &x.FlatFeeCents, &x.IsSelf); err != nil {
+		var isSelf bool
+		if err := rows.Scan(&x.ID, &x.ProjectID, &x.Name, &x.HourlyRateCents, &x.FlatFeeCents, &isSelf); err != nil {
 			return nil, err
 		}
+		x.IsSelf = isSelf
 		out = append(out, x)
 	}
 	return out, rows.Err()
@@ -410,7 +412,7 @@ func ListProjectRoles(d *sql.DB, projectID int64) ([]ProjectRole, error) {
 
 func CreateProjectRole(d *sql.DB, x *ProjectRole) (int64, error) {
 	return insertID(d, `INSERT INTO project_roles(project_id,name,hourly_rate_cents,flat_fee_cents,is_self)
-	 VALUES($1,$2,$3,$4,$5) RETURNING id`, x.ProjectID, x.Name, x.HourlyRateCents, x.FlatFeeCents, x.IsSelf)
+	 VALUES($1,$2,$3,$4,$5) RETURNING id`, x.ProjectID, x.Name, x.HourlyRateCents, x.FlatFeeCents, boolToInt(x.IsSelf))
 }
 
 func DeleteProjectRole(d *sql.DB, id, projectID int64) error {
@@ -454,7 +456,7 @@ func DeleteTimeEntry(d *sql.DB, id, projectID int64) error {
 }
 
 func ListProjectReceivables(d *sql.DB, projectID int64) ([]ProjectReceivable, error) {
-	rows, err := d.Query(`SELECT id,project_id,name,amount_cents,COALESCE(expected_date,''),received,
+	rows, err := d.Query(`SELECT id,project_id,name,amount_cents,COALESCE(expected_date,''),received <> 0,
 	 COALESCE(received_date,''),note FROM project_receivables WHERE project_id=$1 ORDER BY received,expected_date,id`, projectID)
 	if err != nil {
 		return nil, err
@@ -488,7 +490,7 @@ func DeleteProjectReceivable(d *sql.DB, id, projectID int64) error {
 }
 
 func ListProjectCostItems(d *sql.DB, projectID int64) ([]ProjectCostItem, error) {
-	rows, err := d.Query(`SELECT id,project_id,name,amount_cents,currency,exchange_rate,is_labor,paid,
+	rows, err := d.Query(`SELECT id,project_id,name,amount_cents,currency,exchange_rate,is_labor <> 0,paid <> 0,
 	 COALESCE(paid_date,''),note FROM project_cost_items WHERE project_id=$1 ORDER BY paid,id DESC`, projectID)
 	if err != nil {
 		return nil, err
@@ -509,7 +511,14 @@ func ListProjectCostItems(d *sql.DB, projectID int64) ([]ProjectCostItem, error)
 
 func CreateProjectCostItem(d *sql.DB, x *ProjectCostItem) (int64, error) {
 	return insertID(d, `INSERT INTO project_cost_items(project_id,name,amount_cents,currency,exchange_rate,is_labor,note)
-	 VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`, x.ProjectID, x.Name, x.AmountCents, x.Currency, x.ExchangeRate, x.IsLabor, x.Note)
+	 VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`, x.ProjectID, x.Name, x.AmountCents, x.Currency, x.ExchangeRate, boolToInt(x.IsLabor), x.Note)
+}
+
+func boolToInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
 }
 
 func ToggleProjectCostItem(d *sql.DB, id, projectID int64) error {
